@@ -8,3 +8,4 @@ prisma/dev.db
 prisma/dev.db-journal
 public/fonts/*.otf
 public/fonts/*.ttf
+exports-*/

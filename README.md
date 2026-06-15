@@ -179,6 +179,21 @@ Dockerfile + docker-compose.yml + docker-entrypoint.sh
 
 ---
 
+## 数据导出
+
+直接从 SQLite 抽数据 / 导 CSV / 备份的详细指南：[docs/data-export.md](docs/data-export.md)。
+
+一键导一份"快照"（芯片+评级、规则、用户+授权）：
+
+```bash
+./scripts/export-snapshot.sh                  # 本地 dev.db
+./scripts/export-snapshot.sh data/prod.db     # Docker 部署库
+# Docker 容器内
+docker compose exec semidata sh /app/scripts/export-snapshot.sh /data/prod.db
+```
+
+输出到 `exports-YYYYMMDD-HHMM/` 目录，包含 6 个 CSV：芯片+评级、芯片原始数据、规则集、用户、授权矩阵、报告汇总。
+
 ## 常用运维命令
 
 ```bash
