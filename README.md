@@ -43,16 +43,15 @@ docker compose down                                          # 停止
 docker compose down && rm -rf data && docker compose up -d   # 清除数据重新开始
 ```
 
-### 内置账号
+### 管理员账号
 
-| 账号 | 密码 | 角色 | 备注 |
-|---|---|---|---|
-| `admin` | `admin1234` | ADMIN | 全部权限 |
-| `chenmk` | `123456` | ADMIN | 全部权限 |
-| `zhuxk` | `123456` | ADMIN | 全部权限 |
-| `demo` | `demo1234` | USER | 默认零授权，登录后看到「等待授权」页 |
+首次部署后跑 seed 会生成一个默认管理员。如需新增管理员或重置密码：
 
-> 账号是纯用户名，不是邮箱。新账号通过 `/signup` 注册或用 `npx tsx scripts/create-admin.ts <username> <password> [显示名] [公司]` 创建。
+```bash
+npx tsx scripts/create-admin.ts <username> <password> [显示名] [公司]
+```
+
+普通用户通过 `/signup` 自助注册，注册后处于「等待授权」状态，需由管理员在数据集详情页勾选授权。
 
 ### 试一遍主流程
 
