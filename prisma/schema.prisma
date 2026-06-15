@@ -1,0 +1,180 @@
+// Prisma schema — SemiData
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("USER") // ADMIN | USER
+  createdAt    DateTime @default(now())
+
+  batches      Batch[]
+  reports      Report[]
+  ruleSets     RuleSet[]
+  datasets     Dataset[] // 创建者
+  permissions  DatasetPermission[]
+  datasetRecords DatasetRecord[]
+}
+
+// 数据集：一个独立的"逻辑数据库"
+model Dataset {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?
+  kind        String   // BUILTIN_CHIP | CUSTOM
+  schema      String   // JSON: { fields: [{ name, label, type, required }] }
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdById String
+  createdAt   DateTime @default(now())
+
+  batches     Batch[]
+  records     DatasetRecord[]
+  permissions DatasetPermission[]
+}
+
+// 用户对 Dataset 的权限（admin 不在表里，默认全权）
+model DatasetPermission {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  dataset   Dataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  datasetId String
+  canView   Boolean  @default(true)
+  grantedAt DateTime @default(now())
+
+  @@unique([userId, datasetId])
+  @@index([userId])
+  @@index([datasetId])
+}
+
+// 上传批次（任何 Dataset 都用 Batch 作为"一次上传"的元信息）
+model Batch {
+  id           String   @id @default(cuid())
+  dataset      Dataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  datasetId    String
+  name         String
+  description  String?
+  fileName     String
+  fileSize     Int
+  rowCount     Int
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  chips   Chip[]
+  reports Report[]
+  records DatasetRecord[]
+
+  @@index([uploadedById])
+  @@index([datasetId])
+}
+
+// 芯片：仅内置 Chip Dataset 使用（保留固定 schema 以支持评级算法）
+model Chip {
+  id            String  @id @default(cuid())
+  batch         Batch   @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  batchId       String
+
+  chipId        String
+  lotId         String?
+  waferId       String?
+  dieX          Int?
+  dieY          Int?
+  productModel  String?
+
+  testTempC     Float?
+  testVoltageV  Float?
+  packageType   String?
+
+  vthV          Float?
+  iddUa         Float?
+  leakageNa     Float?
+  frequencyMhz  Float?
+  powerMw       Float?
+
+  passCount     Int?
+  failCount     Int?
+  binCode       String?
+  testDurationS Float?
+  testTimestamp DateTime?
+
+  rawExtras String?
+  createdAt DateTime @default(now())
+
+  assessments ChipAssessment[]
+
+  @@index([batchId])
+  @@index([chipId])
+  @@index([lotId, waferId])
+}
+
+// 自定义 Dataset 的通用行存储（一行 = 一个 record，所有字段塞进 dataJson）
+model DatasetRecord {
+  id          String  @id @default(cuid())
+  dataset     Dataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  datasetId   String
+  batch       Batch?  @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  batchId     String?
+  dataJson    String  // JSON: 字段名 → 值
+  uploadedBy  User    @relation(fields: [uploadedById], references: [id])
+  uploadedById String
+  createdAt   DateTime @default(now())
+
+  @@index([datasetId])
+  @@index([batchId])
+}
+
+model Report {
+  id            String   @id @default(cuid())
+  batch         Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  batchId       String
+  generatedBy   User     @relation(fields: [generatedById], references: [id])
+  generatedById String
+  ruleSet       RuleSet? @relation(fields: [ruleSetId], references: [id])
+  ruleSetId     String?
+  algorithm     String   @default("rules+percentile")
+  summary       String
+  createdAt     DateTime @default(now())
+
+  assessments ChipAssessment[]
+
+  @@index([batchId])
+}
+
+model ChipAssessment {
+  id                  String @id @default(cuid())
+  report              Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  reportId            String
+  chip                Chip   @relation(fields: [chipId], references: [id], onDelete: Cascade)
+  chipId              String
+  grade               String
+  score               Float
+  recommendedPriceCny Float
+  rationale           String
+
+  @@unique([reportId, chipId])
+  @@index([grade])
+}
+
+model RuleSet {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  rules       String
+  isDefault   Boolean  @default(false)
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdById String
+  createdAt   DateTime @default(now())
+
+  reports Report[]
+}

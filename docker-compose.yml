@@ -1,0 +1,24 @@
+services:
+  semidata:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: semidata:latest
+    container_name: semidata
+    ports:
+      - "3000:3000"
+    environment:
+      # SQLite 数据库放到 volume 内，换机器只要带走 ./data 目录
+      DATABASE_URL: "file:/data/prod.db"
+      # 生产请覆盖 AUTH_SECRET，例如：AUTH_SECRET=$(openssl rand -hex 32) docker compose up
+      AUTH_SECRET: "${AUTH_SECRET:-please-change-this-XX9F2K-but-it-still-works-for-local}"
+      NEXTAUTH_URL: "${NEXTAUTH_URL:-http://localhost:3000}"
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
