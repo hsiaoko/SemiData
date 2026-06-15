@@ -37,8 +37,8 @@ export default function LoginPage() {
       {/* Top bar */}
       <div className="relative flex justify-between items-center px-10 py-7">
         <div className="flex items-baseline gap-3">
-          <span className="num text-sm tracking-[0.22em] text-ink-2">SEMIDATA</span>
-          <span className="serial">v0.1 · 封测数据中枢</span>
+          <span className="num text-sm tracking-[0.22em] text-ink-2">YIELDEX BENCH</span>
+          <span className="serial">v0.1 · 芯测台</span>
         </div>
         <span className="serial">FAB · LAB · BENCH</span>
       </div>
@@ -105,7 +105,7 @@ export default function LoginPage() {
         <div className="serial max-w-xs">
           一颗芯片 = 一条记录。<br />一张 CSV = 一次入库。一份报告 = 一次决策。
         </div>
-        <div className="serial">© SEMIDATA · {new Date().getFullYear()}</div>
+        <div className="serial">© YIELDEX · {new Date().getFullYear()}</div>
       </div>
     </main>
   );

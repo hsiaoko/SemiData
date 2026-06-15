@@ -49,7 +49,7 @@ export default async function DatasetsPage() {
             {isAdmin(user) ? '尚无数据集' : '尚未被授权访问任何数据集'}
           </div>
           <div className="text-sm text-ink-3 mb-6">
-            {isAdmin(user) ? '新建第一个数据集开始使用' : '请联系管理员（admin@semidata.local）申请数据集权限'}
+            {isAdmin(user) ? '新建第一个数据集开始使用' : '请联系管理员（账号 admin）申请数据集权限'}
           </div>
           {isAdmin(user) && (
             <Link href="/datasets/new" className="btn-primary">+ 新建数据集</Link>

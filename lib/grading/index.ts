@@ -1,6 +1,7 @@
 import { computeRuleScore } from './rules';
 import { buildPercentileLookup } from './percentile';
-import type { AssessmentResult, Grade, RuleSpec } from './types';
+import type { AssessmentResult, Grade, RuleSpec, FieldRule } from './types';
+import { FIELD_LABELS } from '@/lib/csv/aliases';
 
 export const DEFAULT_RULE_SPEC: RuleSpec = {
   fields: [
@@ -25,14 +26,103 @@ function gradeFromScore(score: number): Grade {
   return 'D';
 }
 
-function hardRejected(spec: RuleSpec, chip: Record<string, any>): string | null {
+const GRADE_LABEL: Record<Grade, string> = {
+  S: '特级 (S)',
+  A: '一级 (A)',
+  B: '二级 (B)',
+  C: '三级 (C)',
+  D: '次品 (D)',
+  FAIL: '失效 (FAIL)',
+};
+
+function fmtNum(v: number | null | undefined, digits = 1): string {
+  if (v == null || Number.isNaN(v)) return '—';
+  return v.toFixed(digits);
+}
+
+function fieldUnit(field: string): string {
+  switch (field) {
+    case 'frequencyMhz': return ' MHz';
+    case 'leakageNa': return ' nA';
+    case 'iddUa': return ' μA';
+    case 'vthV': return ' V';
+    case 'powerMw': return ' mW';
+    case 'testTempC': return ' °C';
+    case 'testVoltageV': return ' V';
+    default: return '';
+  }
+}
+
+function labelOf(field: string): string {
+  return (FIELD_LABELS as any)[field] ?? field;
+}
+
+// 把一个字段的评分翻译成中文短句
+function explainField(rule: FieldRule, value: number | null | undefined, sub: number): string {
+  if (value == null) return `${labelOf(rule.field)} 缺值（不参与评分）`;
+  const valStr = fmtNum(value, rule.field === 'vthV' ? 3 : 1) + fieldUnit(rule.field);
+
+  if (rule.ideal != null && rule.tolerance != null && rule.tolerance > 0) {
+    const dev = Math.abs(value - rule.ideal);
+    if (sub >= 85) return `${labelOf(rule.field)} ${valStr}（贴近理想 ${rule.ideal}${fieldUnit(rule.field)}）`;
+    if (sub >= 50) return `${labelOf(rule.field)} ${valStr}（与理想偏差 ${dev.toFixed(3)}${fieldUnit(rule.field)}）`;
+    return `${labelOf(rule.field)} ${valStr}（明显偏离理想）`;
+  }
+
+  const min = rule.min ?? -Infinity;
+  const max = rule.max ?? Infinity;
+  if (value < min) return `${labelOf(rule.field)} ${valStr}（低于下限 ${min}${fieldUnit(rule.field)}，越界）`;
+  if (value > max) return `${labelOf(rule.field)} ${valStr}（超过上限 ${max}${fieldUnit(rule.field)}，越界）`;
+  if (sub >= 80) return `${labelOf(rule.field)} ${valStr}（位于规格中段，表现良好）`;
+  return `${labelOf(rule.field)} ${valStr}（在规格内，靠近边界）`;
+}
+
+function buildRationale(opts: {
+  grade: Grade;
+  score: number;
+  ruleScore: number;
+  percentileScore: number;
+  perField: { rule: FieldRule; sub: number; value: number | null | undefined }[];
+  percentileField: string;
+  recommendedPriceCny: number;
+}): string {
+  const { grade, score, ruleScore, percentileScore, perField, percentileField, recommendedPriceCny } = opts;
+
+  // 1. 关键字段叙述（最多 3 条，按贡献排序）
+  const fieldSentences = [...perField]
+    .map((p) => ({ ...p, weighted: p.sub * p.rule.weight }))
+    .sort((a, b) => b.weighted - a.weighted)
+    .slice(0, 3)
+    .map((p) => explainField(p.rule, p.value, p.sub));
+
+  // 2. 总结句
+  const summary = `综合 ${score.toFixed(1)} 分（规则项 ${ruleScore.toFixed(0)}/100，批内 ${labelOf(percentileField)} 分位 ${percentileScore.toFixed(0)}），列为 ${GRADE_LABEL[grade]}`;
+  // 3. 价格
+  const priceLine = recommendedPriceCny > 0
+    ? `建议单价 ¥${recommendedPriceCny.toFixed(2)}`
+    : '不建议出货';
+
+  return `${fieldSentences.join('；')}。${summary}，${priceLine}。`;
+}
+
+function buildFailRationale(opts: {
+  field: string;
+  value: any;
+  op: string;
+  threshold: any;
+}): string {
+  const human = `${labelOf(opts.field)} = ${opts.value}${fieldUnit(opts.field)}（命中硬否决条件 ${opts.op} ${opts.threshold}${fieldUnit(opts.field)}）`;
+  return `${human}。该芯片不参与综合评分，直接判为 ${GRADE_LABEL.FAIL}，不建议出货。`;
+}
+
+function hardRejectMatch(spec: RuleSpec, chip: Record<string, any>): { field: string; value: any; op: string; threshold: any } | null {
   if (!spec.hardReject) return null;
   for (const r of spec.hardReject) {
     const v = chip[r.field];
     if (v == null) continue;
-    if (r.greaterThan != null && Number(v) > r.greaterThan) return `${r.field} > ${r.greaterThan}`;
-    if (r.lessThan != null && Number(v) < r.lessThan) return `${r.field} < ${r.lessThan}`;
-    if (r.equals != null && v === r.equals) return `${r.field} = ${r.equals}`;
+    if (r.greaterThan != null && Number(v) > r.greaterThan) return { field: r.field, value: v, op: '>', threshold: r.greaterThan };
+    if (r.lessThan != null && Number(v) < r.lessThan) return { field: r.field, value: v, op: '<', threshold: r.lessThan };
+    if (r.equals != null && v === r.equals) return { field: r.field, value: v, op: '=', threshold: r.equals };
   }
   return null;
 }
@@ -40,18 +130,12 @@ function hardRejected(spec: RuleSpec, chip: Record<string, any>): string | null 
 function priceFor(spec: RuleSpec, grade: Grade, score: number): number {
   const base = spec.priceTable[grade] ?? 0;
   if (grade === 'FAIL' || base === 0) return 0;
-  // 同等级内按 score 在 ±10% 区间微调
   const bands: Record<Grade, [number, number]> = {
-    S: [90, 100],
-    A: [75, 90],
-    B: [60, 75],
-    C: [45, 60],
-    D: [0, 45],
-    FAIL: [0, 0],
+    S: [90, 100], A: [75, 90], B: [60, 75], C: [45, 60], D: [0, 45], FAIL: [0, 0],
   };
   const [lo, hi] = bands[grade];
   const t = hi > lo ? Math.min(1, Math.max(0, (score - lo) / (hi - lo))) : 0.5;
-  const adj = (t - 0.5) * 0.2; // -0.1..+0.1
+  const adj = (t - 0.5) * 0.2;
   return Math.round(base * (1 + adj) * 100) / 100;
 }
 
@@ -62,7 +146,6 @@ export function assessBatch(
   spec: RuleSpec = DEFAULT_RULE_SPEC,
   opts: AssessOptions = {}
 ): AssessmentResult[] {
-  // 默认实现：rules + percentile。预留 ML 分支。
   const model = opts.model ?? 'rules+percentile';
   if (model !== 'rules+percentile') {
     throw new Error(`暂未接入模型: ${model}`);
@@ -74,7 +157,7 @@ export function assessBatch(
   const ruleWeight = 1 - percWeight;
 
   return chips.map((chip): AssessmentResult => {
-    const reject = hardRejected(spec, chip);
+    const reject = hardRejectMatch(spec, chip);
     if (reject) {
       return {
         grade: 'FAIL',
@@ -82,33 +165,35 @@ export function assessBatch(
         ruleScore: 0,
         percentileScore: 0,
         recommendedPriceCny: 0,
-        rationale: `硬否决：${reject}`,
+        rationale: buildFailRationale(reject),
       };
     }
     const { score: ruleScore, perField } = computeRuleScore(spec.fields, chip);
     const percentileScore = lookup(typeof chip[percField] === 'number' ? chip[percField] : null);
     const score = ruleScore * ruleWeight + percentileScore * percWeight;
     const grade = gradeFromScore(score);
-    const price = priceFor(spec, grade, score);
+    const recommendedPriceCny = priceFor(spec, grade, score);
 
-    const topReasons = perField
-      .map((p) => ({ ...p, contribution: p.sub * p.rule.weight }))
-      .sort((a, b) => b.contribution - a.contribution)
-      .slice(0, 2)
-      .map((p) => p.reason);
-
-    const rationale = [
-      `综合 ${score.toFixed(1)} 分`,
-      `规则 ${ruleScore.toFixed(0)} / 批内分位 ${percentileScore.toFixed(0)}`,
-      ...topReasons,
-    ].join('；');
+    const rationale = buildRationale({
+      grade,
+      score,
+      ruleScore,
+      percentileScore,
+      perField: perField.map((p) => ({
+        rule: p.rule,
+        sub: p.sub,
+        value: typeof chip[p.rule.field] === 'number' ? chip[p.rule.field] : null,
+      })),
+      percentileField: percField,
+      recommendedPriceCny,
+    });
 
     return {
       grade,
       score: Math.round(score * 10) / 10,
       ruleScore: Math.round(ruleScore * 10) / 10,
       percentileScore: Math.round(percentileScore * 10) / 10,
-      recommendedPriceCny: price,
+      recommendedPriceCny,
       rationale,
     };
   });

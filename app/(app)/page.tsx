@@ -176,7 +176,7 @@ function PendingApprovalPage({ name }: { name: string }) {
           账号已注册成功，但管理员尚未授予你任何数据集的访问权限。
         </p>
         <p className="text-sm text-ink-3 leading-relaxed mb-8">
-          请联系 <span className="num text-ink-2">admin@semidata.local</span> 申请授权。
+          请联系管理员（账号 <span className="num text-ink-2">admin</span>）申请授权。
           管理员会在「数据集」详情页勾选你的账号，授权后刷新即可访问。
         </p>
         <div className="serial">PENDING-USER-ACCESS · 0 datasets visible</div>

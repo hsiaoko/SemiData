@@ -16,7 +16,7 @@ export default async function UploadPage({ searchParams }: { searchParams?: { da
         <div className="eyebrow mb-3">UPLOAD · 01</div>
         <h1 className="display-zh text-3xl mb-3">仅管理员可上传数据</h1>
         <p className="text-sm text-ink-3 mb-6">
-          如需把数据导入特定数据集，请联系管理员（admin@semidata.local）。
+          如需把数据导入特定数据集，请联系管理员（账号 admin）。
         </p>
       </div>
     );

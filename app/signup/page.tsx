@@ -42,8 +42,8 @@ export default function SignupPage() {
 
       <div className="relative flex justify-between items-center px-10 py-7">
         <Link href="/login" className="flex items-baseline gap-3 hover:opacity-70">
-          <span className="num text-sm tracking-[0.22em] text-ink-2">SEMIDATA</span>
-          <span className="serial">v0.1 · 封测数据中枢</span>
+          <span className="num text-sm tracking-[0.22em] text-ink-2">YIELDEX BENCH</span>
+          <span className="serial">v0.1 · 芯测台</span>
         </Link>
         <Link href="/login" className="serial hover:text-ink underline underline-offset-4">已有账号？登录 →</Link>
       </div>
@@ -138,7 +138,7 @@ export default function SignupPage() {
         <div className="serial max-w-xs">
           一颗芯片 = 一条记录。<br />一张 CSV = 一次入库。一份报告 = 一次决策。
         </div>
-        <div className="serial">© SEMIDATA · {new Date().getFullYear()}</div>
+        <div className="serial">© YIELDEX · {new Date().getFullYear()}</div>
       </div>
     </main>
   );

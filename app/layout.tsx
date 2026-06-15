@@ -3,7 +3,7 @@ import './globals.css';
 import SessionProvider from '@/components/SessionProvider';
 
 export const metadata: Metadata = {
-  title: 'SemiData · 封测数据中枢',
+  title: 'YieldEx Bench · 芯测台',
   description: '芯片封测数据的录入、检索与分级定价分析平台',
 };
 

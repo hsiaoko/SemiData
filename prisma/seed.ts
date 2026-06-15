@@ -56,8 +56,8 @@ async function main() {
   const userPw = await bcrypt.hash('demo1234', 10);
   const admin = await prisma.user.upsert({
     where: { email: 'admin' },
-    update: { company: 'SemiData 内部' },
-    create: { email: 'admin', passwordHash: adminPw, name: '管理员', company: 'SemiData 内部', role: 'ADMIN' },
+    update: { company: 'YieldEx 内部' },
+    create: { email: 'admin', passwordHash: adminPw, name: '管理员', company: 'YieldEx 内部', role: 'ADMIN' },
   });
   const demoUser = await prisma.user.upsert({
     where: { email: 'demo' },

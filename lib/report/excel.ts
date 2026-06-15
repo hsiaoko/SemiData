@@ -31,7 +31,7 @@ export async function buildExcel(opts: {
   assessments: AssessmentWithChip[];
 }): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'SemiData';
+  wb.creator = 'YieldEx';
   wb.created = opts.createdAt;
   wb.modified = opts.createdAt;
 
@@ -51,7 +51,7 @@ export async function buildExcel(opts: {
 
   // 标题大行
   ov.mergeCells('A1:E1');
-  ov.getCell('A1').value = `SemiData · 封测分级报告`;
+  ov.getCell('A1').value = `YieldEx · 芯测分级报告`;
   ov.getCell('A1').font = { name: '微软雅黑', size: 18, bold: true, color: { argb: INK } };
   ov.getCell('A1').alignment = { vertical: 'middle' };
   ov.getRow(1).height = 32;

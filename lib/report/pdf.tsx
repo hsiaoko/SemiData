@@ -170,15 +170,15 @@ export async function buildPdf(opts: {
 
   const doc = (
     <Document
-      title={`SemiData 报告 · ${opts.batchName}`}
-      author="SemiData"
-      subject="封测数据分级与定价报告"
+      title={`YieldEx 芯测报告 · ${opts.batchName}`}
+      author="YieldEx"
+      subject="芯片封测分级与定价报告"
     >
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.brandRow}>
-            <Text style={styles.brand}>SEMIDATA · 封测数据中枢</Text>
+            <Text style={styles.brand}>YIELDEX BENCH · 芯测台</Text>
             <Text style={styles.reportTag}>TEST REPORT · {opts.reportId.slice(-8).toUpperCase()}</Text>
           </View>
           <Text style={styles.title}>{opts.batchName}</Text>
@@ -294,7 +294,7 @@ export async function buildPdf(opts: {
 
         {/* Footer */}
         <View style={styles.footer} fixed>
-          <Text>SemiData · 封测数据中枢 · 报告 {opts.reportId.slice(-8).toUpperCase()}</Text>
+          <Text>YieldEx Bench · 芯测台 · 报告 {opts.reportId.slice(-8).toUpperCase()}</Text>
           <Text render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
         </View>
       </Page>
