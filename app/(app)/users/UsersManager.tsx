@@ -6,6 +6,7 @@ type U = {
   id: string;
   email: string;
   name: string;
+  company: string;
   role: string;
   batches: number;
   createdAt: string;
@@ -15,7 +16,7 @@ type U = {
 export function UsersManager({ users, currentUserId }: { users: U[]; currentUserId: string }) {
   const router = useRouter();
   const [showNew, setShowNew] = useState(false);
-  const [draft, setDraft] = useState({ email: '', name: '', password: '', role: 'USER' });
+  const [draft, setDraft] = useState({ email: '', name: '', company: '', password: '', role: 'USER' });
   const [err, setErr] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -30,7 +31,7 @@ export function UsersManager({ users, currentUserId }: { users: U[]; currentUser
       });
       if (!res.ok) throw new Error(await res.text());
       setShowNew(false);
-      setDraft({ email: '', name: '', password: '', role: 'USER' });
+      setDraft({ email: '', name: '', company: '', password: '', role: 'USER' });
       router.refresh();
     } catch (e: any) {
       setErr(e.message);
@@ -80,14 +81,18 @@ export function UsersManager({ users, currentUserId }: { users: U[]; currentUser
       {showNew && (
         <div className="card p-6 mb-6 animate-fade-up">
           <div className="eyebrow mb-4">NEW USER</div>
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-5 gap-4">
             <div>
-              <label className="label">邮箱</label>
-              <input type="email" className="input" value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} />
+              <label className="label">账号</label>
+              <input type="text" className="input" value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} />
             </div>
             <div>
               <label className="label">姓名</label>
               <input className="input" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+            </div>
+            <div>
+              <label className="label">公司</label>
+              <input className="input" value={draft.company} onChange={(e) => setDraft({ ...draft, company: e.target.value })} maxLength={120} />
             </div>
             <div>
               <label className="label">初始密码</label>
@@ -104,7 +109,12 @@ export function UsersManager({ users, currentUserId }: { users: U[]; currentUser
           {err && <div className="text-2xs text-bin-c mt-3">{err}</div>}
           <div className="flex justify-end gap-3 mt-5">
             <button type="button" className="btn-ghost" onClick={() => setShowNew(false)} disabled={saving}>取消</button>
-            <button type="button" className="btn-primary" onClick={create} disabled={saving || !draft.email || !draft.name || draft.password.length < 4}>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={create}
+              disabled={saving || !draft.email.trim() || !draft.name.trim() || !draft.company.trim() || draft.password.length < 4}
+            >
               {saving ? '创建中…' : '创建'}
             </button>
           </div>
@@ -116,7 +126,8 @@ export function UsersManager({ users, currentUserId }: { users: U[]; currentUser
           <thead>
             <tr className="bg-surface-2 text-ink-2">
               <th className="px-4 py-3 text-left font-mono text-2xs tracking-eyebrow uppercase">姓名</th>
-              <th className="px-4 py-3 text-left font-mono text-2xs tracking-eyebrow uppercase">邮箱</th>
+              <th className="px-4 py-3 text-left font-mono text-2xs tracking-eyebrow uppercase">账号</th>
+              <th className="px-4 py-3 text-left font-mono text-2xs tracking-eyebrow uppercase">公司</th>
               <th className="px-4 py-3 text-center font-mono text-2xs tracking-eyebrow uppercase">角色</th>
               <th className="px-4 py-3 text-left font-mono text-2xs tracking-eyebrow uppercase">授权数据集</th>
               <th className="px-4 py-3 text-right font-mono text-2xs tracking-eyebrow uppercase">批次数</th>
@@ -129,6 +140,9 @@ export function UsersManager({ users, currentUserId }: { users: U[]; currentUser
               <tr key={u.id} className="border-t border-line hover:bg-surface-2/60">
                 <td className="px-4 py-3 font-medium">{u.name}{u.id === currentUserId && <span className="ml-2 serial">· 你</span>}</td>
                 <td className="px-4 py-3 num text-2xs text-ink-2">{u.email}</td>
+                <td className="px-4 py-3 text-sm">
+                  {u.company ? u.company : <span className="serial text-ink-3">—</span>}
+                </td>
                 <td className="px-4 py-3 text-center">
                   <span className={`tag ${u.role === 'ADMIN' ? 'text-cobalt' : 'text-ink-3'}`}>{u.role === 'ADMIN' ? '管理员' : '普通'}</span>
                 </td>

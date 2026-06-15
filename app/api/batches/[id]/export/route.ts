@@ -33,6 +33,11 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   });
 
   const safe = batch.name.replace(/[\\/:*?"<>|]/g, '_').slice(0, 60);
+  // RFC 5987：ASCII fallback + 标准 UTF-8 文件名，避免下载弹窗里中文乱码
+  const asciiFallback = safe.replace(/[^\x20-\x7E]/g, '_');
+  const utf8 = encodeURIComponent(safe);
+  const disposition = (ext: string) =>
+    `attachment; filename="${asciiFallback}.${ext}"; filename*=UTF-8''${utf8}.${ext}`;
 
   if (format === 'pdf') {
     const buf = await buildPdf({
@@ -45,7 +50,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     return new NextResponse(new Uint8Array(buf), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${encodeURIComponent(safe)}.pdf"`,
+        'Content-Disposition': disposition('pdf'),
       },
     });
   }
@@ -60,7 +65,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   return new NextResponse(new Uint8Array(buf), {
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': `attachment; filename="${encodeURIComponent(safe)}.xlsx"`,
+      'Content-Disposition': disposition('xlsx'),
     },
   });
 }

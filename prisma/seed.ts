@@ -56,13 +56,13 @@ async function main() {
   const userPw = await bcrypt.hash('demo1234', 10);
   const admin = await prisma.user.upsert({
     where: { email: 'admin' },
-    update: {},
-    create: { email: 'admin', passwordHash: adminPw, name: '管理员', role: 'ADMIN' },
+    update: { company: 'SemiData 内部' },
+    create: { email: 'admin', passwordHash: adminPw, name: '管理员', company: 'SemiData 内部', role: 'ADMIN' },
   });
   const demoUser = await prisma.user.upsert({
     where: { email: 'demo' },
-    update: {},
-    create: { email: 'demo', passwordHash: userPw, name: '测试工程师', role: 'USER' },
+    update: { company: '示例公司' },
+    create: { email: 'demo', passwordHash: userPw, name: '测试工程师', company: '示例公司', role: 'USER' },
   });
   console.log(`✓ users: admin=${admin.email} demo=${demoUser.email}（demo 默认无任何数据集权限）`);
 

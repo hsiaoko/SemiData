@@ -30,6 +30,7 @@ export default async function UsersPage() {
           id: u.id,
           email: u.email,
           name: u.name,
+          company: u.company,
           role: u.role,
           batches: u._count.batches,
           createdAt: u.createdAt.toISOString(),

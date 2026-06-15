@@ -17,6 +17,8 @@ WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# 构建期下载 PDF 渲染所需中文字体
+RUN sh scripts/setup-fonts.sh
 # 构建期用占位 DATABASE_URL，prisma generate 不会连库
 ENV DATABASE_URL="file:/tmp/build.db"
 RUN npx prisma generate

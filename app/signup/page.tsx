@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { BreathingWafer } from '@/components/DieGrid';
 
 export default function SignupPage() {
-  const [form, setForm] = useState({ email: '', name: '', password: '' });
+  const [form, setForm] = useState({ email: '', name: '', company: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -86,6 +86,19 @@ export default function SignupPage() {
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               required
               autoComplete="name"
+              maxLength={80}
+            />
+          </div>
+          <div>
+            <label className="label">公司 / 组织</label>
+            <input
+              className="input"
+              value={form.company}
+              onChange={(e) => setForm({ ...form, company: e.target.value })}
+              required
+              autoComplete="organization"
+              maxLength={120}
+              placeholder="如：长鑫存储 / 中芯国际 / 某高校实验室"
             />
           </div>
           <div>
@@ -101,7 +114,17 @@ export default function SignupPage() {
             />
           </div>
           {err && <div className="text-xs text-bin-c">{err}</div>}
-          <button type="submit" className="btn-primary w-full justify-center" disabled={loading}>
+          <button
+            type="submit"
+            className="btn-primary w-full justify-center"
+            disabled={
+              loading ||
+              !form.email.trim() ||
+              !form.name.trim() ||
+              !form.company.trim() ||
+              form.password.length < 6
+            }
+          >
             {loading ? '提交中…' : '注 册'}
           </button>
         </form>

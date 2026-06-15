@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
-// 用法：npx tsx scripts/create-admin.ts <username> <password> [显示名]
-//      npx tsx scripts/create-admin.ts chenmk 123456
+// 用法：npx tsx scripts/create-admin.ts <username> <password> [显示名] [公司]
+//      npx tsx scripts/create-admin.ts chenmk 123456 陈某某 SemiData
 //
 // username 直接作为登录账号（无需邮箱）。
 // 已存在的账号会被升级为 ADMIN，并重置密码。
@@ -11,21 +11,22 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  const [username, password, name] = process.argv.slice(2);
+  const [username, password, name, company] = process.argv.slice(2);
   if (!username || !password) {
-    console.error('用法: npx tsx scripts/create-admin.ts <username> <password> [显示名]');
+    console.error('用法: npx tsx scripts/create-admin.ts <username> <password> [显示名] [公司]');
     process.exit(1);
   }
   const displayName = name ?? username;
+  const companyName = company ?? 'SemiData 内部';
   const passwordHash = await bcrypt.hash(password, 10);
 
   const user = await prisma.user.upsert({
     where: { email: username },
-    update: { passwordHash, role: 'ADMIN', name: displayName },
-    create: { email: username, passwordHash, role: 'ADMIN', name: displayName },
+    update: { passwordHash, role: 'ADMIN', name: displayName, company: companyName },
+    create: { email: username, passwordHash, role: 'ADMIN', name: displayName, company: companyName },
   });
 
-  console.log(`✓ 管理员就绪：${user.email} · 角色 ${user.role}`);
+  console.log(`✓ 管理员就绪：${user.email} · ${user.company} · 角色 ${user.role}`);
 }
 
 main()

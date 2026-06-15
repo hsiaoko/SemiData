@@ -10,7 +10,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "tsx prisma/seed.ts",
-    "db:reset": "prisma migrate reset --force && npm run prisma:seed"
+    "db:reset": "prisma migrate reset --force && npm run prisma:seed",
+    "setup-fonts": "sh scripts/setup-fonts.sh"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
