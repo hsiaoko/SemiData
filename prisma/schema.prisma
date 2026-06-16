@@ -151,16 +151,20 @@ model DatasetRecord {
 }
 
 model Report {
-  id            String   @id @default(cuid())
-  batch         Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  batchId       String
-  generatedBy   User     @relation(fields: [generatedById], references: [id])
-  generatedById String
-  ruleSet       RuleSet? @relation(fields: [ruleSetId], references: [id])
-  ruleSetId     String?
-  algorithm     String   @default("rules+percentile")
-  summary       String
-  createdAt     DateTime @default(now())
+  id              String   @id @default(cuid())
+  batch           Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  batchId         String
+  generatedBy     User     @relation(fields: [generatedById], references: [id])
+  generatedById   String
+  ruleSet         RuleSet? @relation(fields: [ruleSetId], references: [id])
+  ruleSetId       String?
+  algorithm       String   @default("rules+percentile")
+  summary         String
+  // CUSTOM dataset 的 record-level 评估结果（JSON 数组）
+  // 格式：[{ recordId, grade, score, recommendedPriceCny, rationale }, ...]
+  // BUILTIN_CHIP 不用此字段，仍走 ChipAssessment 表
+  assessmentsJson String?
+  createdAt       DateTime @default(now())
 
   assessments ChipAssessment[]
 

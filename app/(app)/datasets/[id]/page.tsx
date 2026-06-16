@@ -7,6 +7,7 @@ import { StatNumber } from '@/components/StatNumber';
 import { PermissionsPanel } from './PermissionsPanel';
 import { RuleSetsPanel } from './RuleSetsPanel';
 import { CustomRecordsTable } from './CustomRecordsTable';
+import { DeleteDatasetButton } from './DeleteDatasetButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -88,7 +89,17 @@ export default async function DatasetDetail({ params }: { params: { id: string }
           </div>
           <h1 className="display-zh text-4xl text-ink">{dataset.name}</h1>
         </div>
-        <Link href="/datasets" className="serial hover:text-ink">← 数据集列表</Link>
+        <div className="flex items-center gap-3">
+          {isAdmin(user) && !isBuiltin && (
+            <DeleteDatasetButton
+              datasetId={dataset.id}
+              datasetName={dataset.name}
+              batchCount={dataset._count.batches}
+              recordCount={recordCount}
+            />
+          )}
+          <Link href="/datasets" className="serial hover:text-ink">← 数据集列表</Link>
+        </div>
       </div>
       <div className="text-sm text-ink-3 mb-8 flex flex-wrap gap-x-5 gap-y-1">
         <span>{dataset.description ?? '无备注'}</span>
