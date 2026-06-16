@@ -46,7 +46,7 @@ export default async function ReportPage({ params }: { params: { id: string } })
         <p className="text-sm text-ink-3 mb-6">
           点击下方按钮，对全部 {batch.rowCount} 条记录运行评级算法。
         </p>
-        <GenerateReportButton batchId={batch.id} datasetId={batch.datasetId} />
+        <GenerateReportButton batchId={batch.id} datasetId={batch.datasetId} isAdmin={isAdmin(user)} />
       </div>
     );
   }
@@ -75,8 +75,17 @@ export default async function ReportPage({ params }: { params: { id: string } })
         <Link href={`/batches/${batch.id}`} className="serial hover:text-ink">← 返回批次</Link>
       </div>
       <div className="text-sm text-ink-3 mb-8 flex gap-5 flex-wrap">
-        <span>规则集：<span className="text-ink-2">{report.ruleSet?.name ?? '内置默认'}</span></span>
-        <span>·</span>
+        {isAdmin(user) ? (
+          <>
+            <span>规则集：<span className="text-ink-2">{report.ruleSet?.name ?? '内置默认'}</span></span>
+            <span>·</span>
+          </>
+        ) : (
+          <>
+            <span>已应用分析规则</span>
+            <span>·</span>
+          </>
+        )}
         <span>算法：<span className="num text-ink-2">{report.algorithm}</span></span>
         <span>·</span>
         <span>生成人：{report.generatedBy.name}</span>
@@ -179,14 +188,23 @@ async function CustomReportBody({ batch, report, summary }: any) {
   const recordById = new Map(records.map((r) => [r.id, JSON.parse(r.dataJson)]));
 
   const schema = JSON.parse(batch.dataset.schema) as { fields: { name: string; label: string; type: string }[] };
-  // 挑前 3 个非 string 类型字段做表格展示
+  // 过滤掉所有 record 都为空的列；剩下的列里挑前 3 个数值字段做表格展示
+  const nonEmptyFieldNames = new Set<string>();
+  for (const data of recordById.values()) {
+    for (const k of Object.keys(data)) {
+      const v = data[k];
+      if (v != null && v !== '') nonEmptyFieldNames.add(k);
+    }
+  }
   const showFields = schema.fields
+    .filter((f) => nonEmptyFieldNames.has(f.name))
     .filter((f) => f.type === 'integer' || f.type === 'number')
     .slice(0, 3);
-  // 加一个唯一标识字段（required 的第一个或第一个 string 字段）
+  // 加一个唯一标识字段（required 的第一个或第一个有内容的字段）
   const idField =
-    schema.fields.find((f) => f.name === 'sample_id') ??
-    schema.fields.find((f) => f.required) ??
+    schema.fields.find((f) => f.name === 'sample_id' && nonEmptyFieldNames.has(f.name)) ??
+    schema.fields.find((f) => f.required && nonEmptyFieldNames.has(f.name)) ??
+    schema.fields.find((f) => nonEmptyFieldNames.has(f.name)) ??
     schema.fields[0];
 
   const rows = items.map((a) => {

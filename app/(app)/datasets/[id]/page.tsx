@@ -57,22 +57,23 @@ export default async function DatasetDetail({ params }: { params: { id: string }
     ]);
   }
 
-  // 规则集（仅芯片 dataset 才有意义；admin 看全部，user 看已绑定）
-  const isChipDataset = isBuiltin;
+  // 规则集 — 所有 dataset 都可绑定，仅 admin 可见与编辑
   let allRuleSets: any[] = [];
   let boundRuleSetIds: string[] = [];
-  if (isChipDataset) {
+  if (isAdmin(user)) {
     const bindings = await prisma.datasetRuleSet.findMany({
       where: { datasetId: dataset.id },
       select: { ruleSetId: true },
     });
     boundRuleSetIds = bindings.map((b) => b.ruleSetId);
     allRuleSets = await prisma.ruleSet.findMany({
-      where: isAdmin(user) ? {} : { id: { in: boundRuleSetIds } },
       orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
       select: { id: true, name: true, description: true, isDefault: true },
     });
   }
+
+  // 该 dataset 是否绑定了至少一条规则（决定导出是否含 Y 列）— user 也需要知道
+  const hasBoundRule = await prisma.datasetRuleSet.count({ where: { datasetId: dataset.id } });
 
   let recordCount = dataset._count.records;
   if (isBuiltin) {
@@ -151,20 +152,18 @@ export default async function DatasetDetail({ params }: { params: { id: string }
           <div>
             <div className="eyebrow">ACTIONS · 数据操作</div>
             <p className="text-sm text-ink-3 mt-1">
-              {isAdmin(user)
-                ? '上传新数据 / 导出全部数据'
-                : '你有该数据集的查看权限，可一键导出全部数据'}
+              一键导出全部记录{hasBoundRule > 0 ? '，含规则分析的等级 / 推荐价 / 评级理由 Y 列' : '（该数据集尚未配置分析规则，仅导出原始列）'}
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
             <a href={`/api/datasets/${dataset.id}/export?format=csv`} className="btn-ghost text-xs" download>
-              导出全部 CSV ↓
+              导出全部 CSV {hasBoundRule > 0 ? '+ Y 列' : ''} ↓
             </a>
-            <a href={`/api/datasets/${dataset.id}/export?format=xlsx`} className="btn-ghost text-xs" download>
-              导出全部 Excel ↓
+            <a href={`/api/datasets/${dataset.id}/export?format=xlsx`} className="btn-primary text-xs" download>
+              导出全部 Excel {hasBoundRule > 0 ? '+ Y 列' : ''} ↓
             </a>
             {isAdmin(user) && (
-              <Link href={`/upload?dataset=${dataset.id}`} className="btn-primary">+ 上传 CSV</Link>
+              <Link href={`/upload?dataset=${dataset.id}`} className="btn-ghost">+ 上传 CSV</Link>
             )}
           </div>
         </div>
@@ -228,17 +227,15 @@ export default async function DatasetDetail({ params }: { params: { id: string }
         </section>
       )}
 
-      {/* 规则集绑定 — 仅芯片类型 dataset */}
-      {isChipDataset && (
+      {/* 规则集绑定 — 仅 admin 可见 */}
+      {isAdmin(user) && (
         <section className="mb-10">
-          <div className="eyebrow mb-3">
-            RULE SETS · {isAdmin(user) ? '可用规则集（admin 决定）' : '该数据集启用的规则'}
-          </div>
+          <div className="eyebrow mb-3">RULE SETS · 可用规则集（ADMIN 决定）</div>
           <RuleSetsPanel
             datasetId={dataset.id}
             allRuleSets={allRuleSets}
             initialBoundIds={boundRuleSetIds}
-            canEdit={isAdmin(user)}
+            canEdit={true}
           />
         </section>
       )}

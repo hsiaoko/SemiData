@@ -2,16 +2,17 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
-import { canViewDataset, isAdmin } from '@/lib/permissions';
+import { isAdmin } from '@/lib/permissions';
 
 export const runtime = 'nodejs';
 
-// 列出该 dataset 已绑定的规则集（任何有 VIEW 权限的用户都可看，用于生成报告时选择）
+// 列出该 dataset 已绑定的规则集 — 仅 admin 可见
+// 普通用户的"生成报告"按钮不走选择对话框（后端自动选默认）
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   const user = session.user as any;
-  if (!(await canViewDataset(user, params.id))) {
+  if (!isAdmin(user)) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   }
   const bindings = await prisma.datasetRuleSet.findMany({

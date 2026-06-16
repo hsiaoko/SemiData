@@ -90,9 +90,9 @@ export default async function BatchDetail({ params }: { params: { id: string } }
             {latestReport ? (
               <Link href={`/batches/${batch.id}/report`} className="btn-primary">查看最新报告 →</Link>
             ) : (
-              <GenerateReportButton batchId={batch.id} datasetId={batch.datasetId} />
+              <GenerateReportButton batchId={batch.id} datasetId={batch.datasetId} isAdmin={isAdmin(user)} />
             )}
-            {latestReport && <GenerateReportButton batchId={batch.id} datasetId={batch.datasetId} label="重新生成报告" variant="ghost" />}
+            {latestReport && <GenerateReportButton batchId={batch.id} datasetId={batch.datasetId} label="重新生成报告" variant="ghost" isAdmin={isAdmin(user)} />}
             <span className="text-ink-3 text-xs mx-1">·</span>
             <a href={`/api/batches/${batch.id}/export-raw?format=csv`} className="btn-ghost text-xs" download>
               导出原始 CSV ↓
