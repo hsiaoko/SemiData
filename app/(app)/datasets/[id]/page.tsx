@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import { isAdmin, canViewDataset } from '@/lib/permissions';
 import { StatNumber } from '@/components/StatNumber';
 import { PermissionsPanel } from './PermissionsPanel';
+import { RuleSetsPanel } from './RuleSetsPanel';
 import { CustomRecordsTable } from './CustomRecordsTable';
 
 export const dynamic = 'force-dynamic';
@@ -53,6 +54,23 @@ export default async function DatasetDetail({ params }: { params: { id: string }
       prisma.user.findMany({ where: { role: 'USER' }, select: { id: true, name: true, email: true } }),
       prisma.datasetPermission.findMany({ where: { datasetId: dataset.id } }),
     ]);
+  }
+
+  // 规则集（仅芯片 dataset 才有意义；admin 看全部，user 看已绑定）
+  const isChipDataset = isBuiltin;
+  let allRuleSets: any[] = [];
+  let boundRuleSetIds: string[] = [];
+  if (isChipDataset) {
+    const bindings = await prisma.datasetRuleSet.findMany({
+      where: { datasetId: dataset.id },
+      select: { ruleSetId: true },
+    });
+    boundRuleSetIds = bindings.map((b) => b.ruleSetId);
+    allRuleSets = await prisma.ruleSet.findMany({
+      where: isAdmin(user) ? {} : { id: { in: boundRuleSetIds } },
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
+      select: { id: true, name: true, description: true, isDefault: true },
+    });
   }
 
   let recordCount = dataset._count.records;
@@ -116,20 +134,30 @@ export default async function DatasetDetail({ params }: { params: { id: string }
         </div>
       </section>
 
-      {/* 上传操作 */}
-      {isAdmin(user) && (
-        <section className="mb-10">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="eyebrow">UPLOAD · 数据导入</div>
-              <p className="text-sm text-ink-3 mt-1">
-                以此 schema 为目标，把 CSV 数据上传到当前数据集
-              </p>
-            </div>
-            <Link href={`/upload?dataset=${dataset.id}`} className="btn-primary">+ 上传 CSV 到此数据集</Link>
+      {/* 操作区：导出（所有 VIEW 用户）+ 上传（admin） */}
+      <section className="mb-10 card p-5">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <div className="eyebrow">ACTIONS · 数据操作</div>
+            <p className="text-sm text-ink-3 mt-1">
+              {isAdmin(user)
+                ? '上传新数据 / 导出全部数据'
+                : '你有该数据集的查看权限，可一键导出全部数据'}
+            </p>
           </div>
-        </section>
-      )}
+          <div className="flex gap-2 flex-wrap">
+            <a href={`/api/datasets/${dataset.id}/export?format=csv`} className="btn-ghost text-xs" download>
+              导出全部 CSV ↓
+            </a>
+            <a href={`/api/datasets/${dataset.id}/export?format=xlsx`} className="btn-ghost text-xs" download>
+              导出全部 Excel ↓
+            </a>
+            {isAdmin(user) && (
+              <Link href={`/upload?dataset=${dataset.id}`} className="btn-primary">+ 上传 CSV</Link>
+            )}
+          </div>
+        </div>
+      </section>
 
       {/* 批次 / 记录 */}
       <section className="mb-10">
@@ -186,6 +214,21 @@ export default async function DatasetDetail({ params }: { params: { id: string }
         <section className="mb-10">
           <div className="eyebrow mb-3">RECORDS · 全部数据</div>
           <CustomRecordsTable datasetId={dataset.id} schema={schema} />
+        </section>
+      )}
+
+      {/* 规则集绑定 — 仅芯片类型 dataset */}
+      {isChipDataset && (
+        <section className="mb-10">
+          <div className="eyebrow mb-3">
+            RULE SETS · {isAdmin(user) ? '可用规则集（admin 决定）' : '该数据集启用的规则'}
+          </div>
+          <RuleSetsPanel
+            datasetId={dataset.id}
+            allRuleSets={allRuleSets}
+            initialBoundIds={boundRuleSetIds}
+            canEdit={isAdmin(user)}
+          />
         </section>
       )}
 

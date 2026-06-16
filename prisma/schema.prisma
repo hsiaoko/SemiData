@@ -41,6 +41,21 @@ model Dataset {
   batches     Batch[]
   records     DatasetRecord[]
   permissions DatasetPermission[]
+  ruleSets    DatasetRuleSet[]
+}
+
+// Dataset × RuleSet 多对多绑定 — admin 决定哪些规则集可用于生成该 dataset 的报告
+model DatasetRuleSet {
+  id        String   @id @default(cuid())
+  dataset   Dataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  datasetId String
+  ruleSet   RuleSet  @relation(fields: [ruleSetId], references: [id], onDelete: Cascade)
+  ruleSetId String
+  createdAt DateTime @default(now())
+
+  @@unique([datasetId, ruleSetId])
+  @@index([datasetId])
+  @@index([ruleSetId])
 }
 
 // 用户对 Dataset 的权限（admin 不在表里，默认全权）
@@ -177,5 +192,6 @@ model RuleSet {
   createdById String
   createdAt   DateTime @default(now())
 
-  reports Report[]
+  reports  Report[]
+  datasets DatasetRuleSet[]
 }

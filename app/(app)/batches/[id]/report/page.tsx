@@ -42,7 +42,7 @@ export default async function ReportPage({ params }: { params: { id: string } })
         <div className="eyebrow mb-3">NO REPORT</div>
         <h1 className="display-zh text-3xl mb-3">该批次尚未生成报告</h1>
         <p className="text-sm text-ink-3 mb-6">点击下方按钮，对全部 {batch.rowCount} 颗芯片运行评级算法。</p>
-        <GenerateReportButton batchId={batch.id} />
+        <GenerateReportButton batchId={batch.id} datasetId={batch.datasetId} />
       </div>
     );
   }

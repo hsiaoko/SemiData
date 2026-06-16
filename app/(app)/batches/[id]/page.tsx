@@ -86,13 +86,20 @@ export default async function BatchDetail({ params }: { params: { id: string } }
             <div className="eyebrow mb-2">BIN DISTRIBUTION</div>
             <BinBar distribution={binDist} order={Object.keys(binDist).sort()} height={20} />
           </div>
-          <div className="flex gap-3" id="report">
+          <div className="flex flex-wrap gap-3 items-center" id="report">
             {latestReport ? (
               <Link href={`/batches/${batch.id}/report`} className="btn-primary">查看最新报告 →</Link>
             ) : (
-              <GenerateReportButton batchId={batch.id} />
+              <GenerateReportButton batchId={batch.id} datasetId={batch.datasetId} />
             )}
-            {latestReport && <GenerateReportButton batchId={batch.id} label="重新生成报告" variant="ghost" />}
+            {latestReport && <GenerateReportButton batchId={batch.id} datasetId={batch.datasetId} label="重新生成报告" variant="ghost" />}
+            <span className="text-ink-3 text-xs mx-1">·</span>
+            <a href={`/api/batches/${batch.id}/export-raw?format=csv`} className="btn-ghost text-xs" download>
+              导出原始 CSV ↓
+            </a>
+            <a href={`/api/batches/${batch.id}/export-raw?format=xlsx`} className="btn-ghost text-xs" download>
+              导出原始 Excel ↓
+            </a>
           </div>
         </div>
       </section>
