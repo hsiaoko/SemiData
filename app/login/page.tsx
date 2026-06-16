@@ -1,10 +1,18 @@
 'use client';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 import { BreathingWafer } from '@/components/DieGrid';
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageInner />
+    </Suspense>
+  );
+}
+
+function LoginPageInner() {
   const sp = useSearchParams();
   const callbackUrl = sp.get('callbackUrl') ?? '/';
   const [email, setEmail] = useState('admin');
