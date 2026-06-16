@@ -159,6 +159,52 @@ async function main() {
   });
   console.log(`✓ dataset(CUSTOM): 老化测试`);
 
+  // 4b) SSD/闪存测试数据 Schema（只建数据集，不生成模拟行，由用户在网页拖入 CSV）
+  await prisma.dataset.upsert({
+    where: { slug: 'ssd-production' },
+    update: {},
+    create: {
+      slug: 'ssd-production',
+      name: 'SSD 测试数据',
+      description: '闪存测试原始数据：Index、Customer、Machine ID、容量、读写速度、坏地址等字段',
+      kind: 'CUSTOM',
+      schema: JSON.stringify({
+        fields: [
+          { name: 'batch_name', label: '所在批次', type: 'string' },
+          { name: 'index_no', label: 'Index', type: 'integer', required: true },
+          { name: 'customer', label: 'Customer', type: 'string', required: true },
+          { name: 'user_id', label: 'User ID', type: 'string', required: true },
+          { name: 'machine_id', label: 'Machine ID', type: 'string', required: true },
+          { name: 'tray_id', label: 'Tray ID', type: 'string' },
+          { name: 'operator', label: 'Operator', type: 'string', required: true },
+          { name: 'port_number', label: 'Port Number', type: 'integer' },
+          { name: 'ymd', label: 'YMD', type: 'datetime' },
+          { name: 'hms', label: 'HMS', type: 'string' },
+          { name: 'duration_s', label: 'Duration (second)', type: 'number' },
+          { name: 'action', label: 'Action', type: 'string', required: true },
+          { name: 'result', label: 'Result', type: 'string', required: true },
+          { name: 'mid_hex', label: 'MID (Hex)', type: 'string' },
+          { name: 'oid_hex', label: 'OID (Hex)', type: 'string' },
+          { name: 'product_name', label: 'ProductName', type: 'string' },
+          { name: 'revision_hex', label: 'Revision (Hex)', type: 'string' },
+          { name: 'manufacture_date', label: 'ManufactureDate', type: 'datetime' },
+          { name: 'serial_number_hex', label: 'Serial Number (Hex)', type: 'string' },
+          { name: 'capacity', label: 'Capacity', type: 'string', required: true },
+          { name: 'total_sectors', label: 'Total Sectors', type: 'integer' },
+          { name: 'write_speed', label: 'Write Speed', type: 'number', unit: 'MB/s' },
+          { name: 'read_speed', label: 'Read Speed', type: 'number', unit: 'MB/s' },
+          { name: 'bad_address', label: 'Bad Address', type: 'integer' },
+          { name: 'current_ma', label: 'Current (mA)', type: 'number', unit: 'mA' },
+          { name: 'controller', label: 'Controller', type: 'string' },
+          { name: 'wafer_pn', label: 'Wafer P/N', type: 'string' },
+          { name: 'remark', label: 'Remark', type: 'string' },
+        ],
+      }),
+      createdById: admin.id,
+    },
+  });
+  console.log(`✓ dataset(CUSTOM): SSD 测试数据`);
+
   // 5) 示例 CSV
   const samplePath = path.join(process.cwd(), 'public', 'sample-data');
   mkdirSync(samplePath, { recursive: true });
