@@ -187,7 +187,7 @@ async function CustomReportBody({ batch, report, summary }: any) {
     : [];
   const recordById = new Map(records.map((r) => [r.id, JSON.parse(r.dataJson)]));
 
-  const schema = JSON.parse(batch.dataset.schema) as { fields: { name: string; label: string; type: string }[] };
+  const schema = JSON.parse(batch.dataset.schema) as { fields: { name: string; label: string; type: string; required?: boolean }[] };
   // 过滤掉所有 record 都为空的列；剩下的列里挑前 3 个数值字段做表格展示
   const nonEmptyFieldNames = new Set<string>();
   for (const data of recordById.values()) {

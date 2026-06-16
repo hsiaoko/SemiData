@@ -83,7 +83,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   const recordById = new Map(records.map((r) => [r.id, JSON.parse(r.dataJson)]));
 
   const schema = JSON.parse(batch.dataset.schema) as {
-    fields: { name: string; label: string; type: string }[];
+    fields: { name: string; label: string; type: string; required?: boolean }[];
   };
   const extraFields = schema.fields
     .filter((f) => f.type === 'integer' || f.type === 'number')
