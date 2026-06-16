@@ -13,8 +13,9 @@ export const GRADE_LABELS: Record<Grade, string> = {
   FAIL: '失效',
 };
 
+// 字段名可以是任意 string — 通用以适配 CUSTOM dataset
 export type FieldRule = {
-  field: ChipField;
+  field: string;
   // either range-based or ideal-tolerance-based
   min?: number;
   max?: number;
@@ -24,20 +25,20 @@ export type FieldRule = {
 };
 
 export type HardRejectRule = {
-  field: ChipField;
-  // 命中则直接 FAIL
+  field: string;
+  // 命中则直接 FAIL（任一非空生效）
   greaterThan?: number;
   lessThan?: number;
   equals?: number | string;
+  notEquals?: number | string;
 };
 
 export type RuleSpec = {
   fields: FieldRule[];
   hardReject?: HardRejectRule[];
-  // 用于批内分位的字段
-  percentileField?: ChipField;
+  percentileField?: string;
   percentileWeight?: number; // 默认 0.3
-  priceTable: Record<Grade, number>; // CNY per chip
+  priceTable: Record<Grade, number>;
 };
 
 export type AssessmentResult = {

@@ -32,7 +32,8 @@ export default async function Dashboard() {
     },
   });
 
-  const heroBatch = batches.find((b) => b.reports.length > 0 && b.dataset.kind === 'BUILTIN_CHIP') ?? batches[0];
+  // Hero = 最新有报告的批次（不限 kind）
+  const heroBatch = batches.find((b) => b.reports.length > 0) ?? batches[0];
   let heroDies: { color: string; x: 0; y: 0 }[] = [];
   let heroSummary: any = null;
   if (heroBatch?.reports[0]) {
@@ -40,12 +41,17 @@ export default async function Dashboard() {
       total: 0, yield: 0, gradeDistribution: {}, totalRecommendedPriceCny: 0, avgPriceCny: 0,
       ...JSON.parse(heroBatch.reports[0].summary),
     };
-    const assessments = await prisma.chipAssessment.findMany({
-      where: { reportId: heroBatch.reports[0].id },
-      select: { grade: true },
-      take: 1500,
-    });
-    heroDies = assessments.map((a) => ({ x: 0, y: 0, color: gradeColor(a.grade) }));
+    if (heroBatch.dataset.kind === 'BUILTIN_CHIP') {
+      const assessments = await prisma.chipAssessment.findMany({
+        where: { reportId: heroBatch.reports[0].id },
+        select: { grade: true },
+        take: 1500,
+      });
+      heroDies = assessments.map((a) => ({ x: 0, y: 0, color: gradeColor(a.grade) }));
+    } else if (heroBatch.reports[0].assessmentsJson) {
+      const items: { grade: string }[] = JSON.parse(heroBatch.reports[0].assessmentsJson);
+      heroDies = items.slice(0, 1500).map((a) => ({ x: 0, y: 0, color: gradeColor(a.grade) }));
+    }
   }
 
   const [datasetsCount, totalChips, totalReports] = await Promise.all([
@@ -124,10 +130,7 @@ export default async function Dashboard() {
             <ul className="divide-y divide-line">
               {batches.map((b) => (
                 <li key={b.id} className="py-3 first:pt-0 last:pb-0">
-                  <Link
-                    href={b.dataset.kind === 'BUILTIN_CHIP' ? `/batches/${b.id}` : `/datasets/${b.datasetId}`}
-                    className="block hover:text-cobalt"
-                  >
+                  <Link href={`/batches/${b.id}`} className="block hover:text-cobalt">
                     <div className="text-sm font-medium truncate">{b.name}</div>
                     <div className="serial mt-0.5 flex gap-3">
                       <span>{(b._count.chips || b._count.records).toLocaleString()} 行</span>

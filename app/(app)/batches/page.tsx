@@ -96,7 +96,7 @@ export default async function BatchesPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link href={detailHref} className="text-xs text-cobalt hover:underline mr-3">查看</Link>
-                      {isBuiltin && b._count.reports > 0 && (
+                      {b._count.reports > 0 && (
                         <Link href={`/batches/${b.id}/report`} className="text-xs text-irid-pink hover:underline">报告</Link>
                       )}
                     </td>

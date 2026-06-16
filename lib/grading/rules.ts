@@ -2,9 +2,23 @@ import type { FieldRule } from './types';
 
 type ChipRow = Record<string, any>;
 
+// 接受 number 或 string（自动取数字前缀，如 "9.58M/S" → 9.58）
+function toNumber(v: any): number | null {
+  if (typeof v === 'number' && !Number.isNaN(v)) return v;
+  if (typeof v === 'string') {
+    const m = v.match(/^[\s]*(-?\d+\.?\d*)/);
+    if (m) {
+      const n = parseFloat(m[1]);
+      if (!Number.isNaN(n)) return n;
+    }
+  }
+  return null;
+}
+
 // 字段子分：将该字段值映射到 0..100
-export function scoreField(rule: FieldRule, value: number | null | undefined): { sub: number; reason: string } | null {
-  if (value == null || Number.isNaN(value)) return null;
+export function scoreField(rule: FieldRule, raw: any): { sub: number; reason: string } | null {
+  const value = toNumber(raw);
+  if (value == null) return null;
 
   // ideal + tolerance 模式：高斯衰减
   if (rule.ideal != null && rule.tolerance != null && rule.tolerance > 0) {
@@ -35,8 +49,7 @@ export function computeRuleScore(rules: FieldRule[], chip: ChipRow): { score: nu
   let totalWeight = 0;
   let weighted = 0;
   for (const rule of rules) {
-    const value = chip[rule.field];
-    const s = scoreField(rule, typeof value === 'number' ? value : value != null ? Number(value) : null);
+    const s = scoreField(rule, chip[rule.field]);
     if (s == null) continue;
     perField.push({ rule, sub: s.sub, reason: s.reason });
     totalWeight += rule.weight;

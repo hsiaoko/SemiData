@@ -119,10 +119,17 @@ function hardRejectMatch(spec: RuleSpec, chip: Record<string, any>): { field: st
   if (!spec.hardReject) return null;
   for (const r of spec.hardReject) {
     const v = chip[r.field];
+    if (r.notEquals != null) {
+      // 缺值也算命中（更严格）
+      if (v == null || String(v) !== String(r.notEquals)) {
+        return { field: r.field, value: v ?? '(空)', op: '≠', threshold: r.notEquals };
+      }
+      continue;
+    }
     if (v == null) continue;
     if (r.greaterThan != null && Number(v) > r.greaterThan) return { field: r.field, value: v, op: '>', threshold: r.greaterThan };
     if (r.lessThan != null && Number(v) < r.lessThan) return { field: r.field, value: v, op: '<', threshold: r.lessThan };
-    if (r.equals != null && v === r.equals) return { field: r.field, value: v, op: '=', threshold: r.equals };
+    if (r.equals != null && String(v) === String(r.equals)) return { field: r.field, value: v, op: '=', threshold: r.equals };
   }
   return null;
 }
@@ -152,7 +159,16 @@ export function assessBatch(
   }
 
   const percField = spec.percentileField ?? 'frequencyMhz';
-  const lookup = buildPercentileLookup(chips.map((c) => (typeof c[percField] === 'number' ? c[percField] : null)));
+  // 接受 string（自动解析数字前缀）
+  const toNum = (v: any): number | null => {
+    if (typeof v === 'number' && !Number.isNaN(v)) return v;
+    if (typeof v === 'string') {
+      const m = v.match(/^[\s]*(-?\d+\.?\d*)/);
+      if (m) return parseFloat(m[1]);
+    }
+    return null;
+  };
+  const lookup = buildPercentileLookup(chips.map((c) => toNum(c[percField])));
   const percWeight = spec.percentileWeight ?? 0.3;
   const ruleWeight = 1 - percWeight;
 
@@ -169,7 +185,7 @@ export function assessBatch(
       };
     }
     const { score: ruleScore, perField } = computeRuleScore(spec.fields, chip);
-    const percentileScore = lookup(typeof chip[percField] === 'number' ? chip[percField] : null);
+    const percentileScore = lookup(toNum(chip[percField]));
     const score = ruleScore * ruleWeight + percentileScore * percWeight;
     const grade = gradeFromScore(score);
     const recommendedPriceCny = priceFor(spec, grade, score);
@@ -182,7 +198,7 @@ export function assessBatch(
       perField: perField.map((p) => ({
         rule: p.rule,
         sub: p.sub,
-        value: typeof chip[p.rule.field] === 'number' ? chip[p.rule.field] : null,
+        value: toNum(chip[p.rule.field]),
       })),
       percentileField: percField,
       recommendedPriceCny,

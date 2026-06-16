@@ -204,11 +204,7 @@ export default async function DatasetDetail({ params }: { params: { id: string }
                         {new Date(b.createdAt).toLocaleString('zh-CN', { hour12: false }).slice(0, 16)}
                       </td>
                       <td className="px-3 py-2 text-right">
-                        {isBuiltin ? (
-                          <Link href={`/batches/${b.id}`} className="text-xs text-cobalt hover:underline">查看</Link>
-                        ) : (
-                          <span className="text-xs text-ink-3">见下表</span>
-                        )}
+                        <Link href={`/batches/${b.id}`} className="text-xs text-cobalt hover:underline">查看</Link>
                       </td>
                     </tr>
                   );
