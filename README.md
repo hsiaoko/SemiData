@@ -46,7 +46,79 @@ docker compose down                                          # 停止
 docker compose down && rm -rf data && docker compose up -d   # 清除数据重新开始
 ```
 
-### 方式 C：打包成镜像分发（生产）
+### 方式 C：生产模式后台运行（PM2，适合 VPS / 云服务器裸机部署）
+
+如果不想用 Docker，想直接在云服务器（腾讯云 / 阿里云 / AWS EC2 等）以守护进程方式跑，推荐 PM2：
+
+```bash
+# 1. 安装依赖与构建产物（一次性）
+npm install
+npm run setup-fonts              # 下载 PDF 中文字体
+npx prisma migrate deploy        # 生产用 deploy，不要用 dev
+npm run prisma:seed              # 仅首次部署需要
+npm run build                    # ★ 生产模式必须 build；不 build 就 start 会报 prerender-manifest.json 缺失
+
+# 2. 配置 .env（项目根目录，已 .gitignore，需要在服务器上手动创建）
+cat > .env <<EOF
+DATABASE_URL="file:./prisma/prod.db"
+AUTH_SECRET="$(openssl rand -hex 32)"
+NEXTAUTH_URL="http://你的公网IP:3000"
+EOF
+
+# 3. 用 PM2 守护
+npm install -g pm2
+pm2 start npm --name yieldex -- start    # 后台跑 `npm run start`
+pm2 logs yieldex                          # 跟踪日志
+pm2 save                                  # 保存当前进程列表
+pm2 startup                               # 开机自启；按提示复制最后一行 sudo 命令执行一次
+```
+
+之后浏览器访问 `http://你的公网IP:3000` 即可。
+
+**云服务器还要开 3000 端口**：控制台 → 安全组 → 入站规则 → 新增一条：协议 `TCP`，端口 `3000`，来源 `0.0.0.0/0`（含义：放开给所有 IP；自有内网部署可填具体网段）。系统层若开了 `ufw` 还需 `sudo ufw allow 3000/tcp`。
+
+**改了代码 / 拉了新版本**：
+
+```bash
+git pull
+npm install                      # 依赖有变才需要
+npx prisma migrate deploy        # 有新迁移才需要
+npm run build
+pm2 restart yieldex
+```
+
+**常用 PM2 命令**：
+
+```bash
+pm2 status                   # 看所有进程
+pm2 logs yieldex --lines 100 # 看最近 100 行日志
+pm2 restart yieldex
+pm2 stop yieldex
+pm2 delete yieldex           # 彻底移除
+pm2 monit                    # 实时 CPU/内存监控面板
+```
+
+**关于域名 / HTTPS**：换访问地址（绑了域名、加了 Nginx 反代、上了 HTTPS）后，记得同步改 `.env` 里的 `NEXTAUTH_URL` 再 `pm2 restart yieldex`。`trustHost: true` 已配置，所以任何 host 都能正常签发 session，但登录回调跳转仍以 `NEXTAUTH_URL` 为准。
+
+**用 Nginx 反代到 80/443**（推荐生产用法）：
+
+```nginx
+server {
+  listen 80;
+  server_name 你的域名;
+  client_max_body_size 100M;     # CSV 上传可能较大
+  location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+}
+```
+
+配好后 `.env` 中改 `NEXTAUTH_URL="http://你的域名"`（不带 :3000），并把云安全组的 3000 端口关掉、只开放 80/443。
+
+### 方式 D：打包成镜像分发（生产）
 
 ```bash
 # 多平台构建（Mac M 系列开发机 → x86 服务器必须指定 --platform）
