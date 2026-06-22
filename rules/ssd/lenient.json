@@ -1,0 +1,20 @@
+{
+  "name": "SSD 宽松分级",
+  "description": "允许一定坏地址和较低速度，适合次级品筛选。",
+  "isDefault": false,
+  "spec": {
+    "fields": [
+      { "field": "write_speed", "min": 250, "ideal": 450, "max": 600, "weight": 0.3 },
+      { "field": "read_speed", "min": 300, "ideal": 500, "max": 700, "weight": 0.3 },
+      { "field": "bad_address", "max": 50, "weight": 0.25 },
+      { "field": "current_ma", "min": 80, "ideal": 200, "max": 400, "weight": 0.15 }
+    ],
+    "hardReject": [
+      { "field": "result", "notEquals": "PASS" },
+      { "field": "bad_address", "greaterThan": 500 }
+    ],
+    "percentileField": "write_speed",
+    "percentileWeight": 0.2,
+    "priceTable": { "S": 50, "A": 38, "B": 26, "C": 16, "D": 7, "FAIL": 0 }
+  }
+}

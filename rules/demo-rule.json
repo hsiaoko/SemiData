@@ -1,0 +1,14 @@
+{
+  "fields": [
+    { "field": "frequencyMhz", "min": 400, "ideal": 490, "max": 550, "weight": 0.4 },
+    { "field": "leakageNa", "max": 50, "weight": 0.25 },
+    { "field": "vthV", "ideal": 0.7, "tolerance": 0.05, "weight": 0.2 },
+    { "field": "iddUa", "max": 110, "weight": 0.15 }
+  ],
+  "hardReject": [
+    { "field": "failCount", "greaterThan": 0 }
+  ],
+  "percentileField": "frequencyMhz",
+  "percentileWeight": 0.3,
+  "priceTable": { "S": 20, "A": 16, "B": 11, "C": 7, "D": 4, "FAIL": 0 }
+}

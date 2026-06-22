@@ -1,0 +1,20 @@
+{
+  "name": "SSD 严格分级",
+  "description": "对速度和坏地址要求更严格，适合高品质筛选。",
+  "isDefault": false,
+  "spec": {
+    "fields": [
+      { "field": "write_speed", "min": 500, "ideal": 600, "max": 750, "weight": 0.3 },
+      { "field": "read_speed", "min": 550, "ideal": 700, "max": 900, "weight": 0.3 },
+      { "field": "bad_address", "max": 0, "weight": 0.25 },
+      { "field": "current_ma", "min": 120, "ideal": 170, "max": 220, "weight": 0.15 }
+    ],
+    "hardReject": [
+      { "field": "result", "notEquals": "PASS" },
+      { "field": "bad_address", "greaterThan": 5 }
+    ],
+    "percentileField": "read_speed",
+    "percentileWeight": 0.3,
+    "priceTable": { "S": 100, "A": 75, "B": 50, "C": 30, "D": 12, "FAIL": 0 }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "SSD 标准分级",
+  "description": "基于读写速度、坏地址数和电流的标准分级。Result 不为 PASS 或坏地址数过多直接判 FAIL。",
+  "isDefault": true,
+  "spec": {
+    "fields": [
+      { "field": "write_speed", "min": 400, "ideal": 550, "max": 700, "weight": 0.3 },
+      { "field": "read_speed", "min": 450, "ideal": 600, "max": 800, "weight": 0.3 },
+      { "field": "bad_address", "max": 10, "weight": 0.25 },
+      { "field": "current_ma", "min": 100, "ideal": 180, "max": 300, "weight": 0.15 }
+    ],
+    "hardReject": [
+      { "field": "result", "notEquals": "PASS" },
+      { "field": "bad_address", "greaterThan": 100 }
+    ],
+    "percentileField": "write_speed",
+    "percentileWeight": 0.3,
+    "priceTable": { "S": 80, "A": 60, "B": 40, "C": 25, "D": 10, "FAIL": 0 }
+  }
+}
